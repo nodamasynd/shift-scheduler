@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>シフト自動作成アプリ - プロフェッショナル版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --primary-dark: #5568d3;
+            --primary-light: #7c94ff;
+            --secondary-color: #764ba2;
+            --success-color: #48bb78;
+            --warning-color: #ed8936;
+            --danger-color: #f56565;
+            --info-color: #4299e1;
+            --dark-bg: #1a202c;
+            --light-bg: #f7fafc;
+            --card-bg: #ffffff;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ヘッダー */
+        .app-header {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-xl);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .app-header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .app-header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        /* プログレスバー */
+        .progress-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .progress-line {
+            position: absolute;
+            top: 24px;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            z-index: 1;
+            transition: width 0.3s ease;
+        }
+
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+            flex: 1;
+        }
+
+        .step-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 4px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .step-circle.active {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .step-circle.completed {
+            border-color: var(--success-color);
+            background: var(--success-color);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .step-label.active {
+            color: var(--primary-color);
+        }
+
+        /* カード */
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-right: 20px;
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* フォームグループ */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .form-group label i {
+            margin-right: 8px;
+            color: var(--primary-color);
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: var(--light-bg);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        .help-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+        }
+
+        .help-text i {
+            margin-right: 5px;
+            font-size: 12px;
+        }
+
+        /* チェックボックスグループ */
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            background: var(--light-bg);
+        }
+
+        .checkbox-label:hover {
+            border-color: var(--primary-color);
+            background: white;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .checkbox-label input[type="checkbox"]:checked + span {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* スタッフカード */
+        .staff-item {
+            background: var(--light-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .staff-item:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .staff-item h3 {
+            color: var(--primary-color);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .staff-item h3 i {
+            margin-right: 10px;
+        }
+
+        /* ボタン */
+        .btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            min-width: 200px;
+        }
+
+        .btn i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.6);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        /* ローディング */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* アラート */
+        .alert {
+            padding: 20px 24px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .alert i {
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .alert-success {
+            background: #f0fff4;
+            color: #22543d;
+            border: 2px solid #9ae6b4;
+        }
+
+        .alert-danger {
+            background: #fff5f5;
+            color: #742a2a;
+            border: 2px solid #fc8181;
+        }
+
+        .alert-warning {
+            background: #fffaf0;
+            color: #7c2d12;
+            border: 2px solid #fbd38d;
+        }
+
+        .alert-info {
+            background: #ebf8ff;
+            color: #2c5282;
+            border: 2px solid #90cdf4;
+        }
+
+        /* テーブル */
+        .schedule-table {
+            overflow-x: auto;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .schedule-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .schedule-table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 16px 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .schedule-table td {
+            padding: 14px 10px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+
+        .schedule-table tr:hover {
+            background: var(--light-bg);
+        }
+
+        .schedule-table td:first-child {
+            font-weight: 600;
+            color: var(--primary-color);
+            position: sticky;
+            left: 0;
+            background: white;
+        }
+
+        .schedule-table tr:hover td:first-child {
+            background: var(--light-bg);
+        }
+
+        /* シフトスタイル */
+        .shift-早番 {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            color: #78350f;
+            padding: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        .shift-中番 {
+            background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+            color: #1e3a8a;
+            padding: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        .shift-遅番 {
+            background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+            color: #831843;
+            padding: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        .shift-OFF1, .shift-OFF2, .shift-OFF3, .shift-OFF4, .shift-OFF5,
+        .shift-OFF6, .shift-OFF7, .shift-OFF8, .shift-OFF9 {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            color: #064e3b;
+            padding: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        /* 条件表示 */
+        .conditions-card {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            border: 2px solid var(--primary-color);
+            border-radius: 16px;
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .conditions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .condition-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .condition-item h4 {
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .condition-item h4 i {
+            margin-right: 10px;
+        }
+
+        .condition-item ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .condition-item li {
+            padding: 8px 0;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .condition-item li i {
+            margin-right: 8px;
+            color: var(--success-color);
+            font-size: 12px;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .app-header {
+                padding: 25px;
+            }
+
+            .app-header h1 {
+                font-size: 26px;
+            }
+
+            .card {
+                padding: 25px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .progress-steps {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .progress-steps::before {
+                display: none;
+            }
+
+            .step-circle {
+                margin-bottom: 10px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        /* 隠す */
+        .hidden {
+            display: none;
+        }
+
+        /* エラー表示の改善 */
+        .error-details {
+            margin-top: 30px;
+        }
+
+        .error-item {
+            background: white;
+            border-left: 5px solid var(--danger-color);
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .error-item h4 {
+            color: var(--danger-color);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .error-item h4 i {
+            margin-right: 10px;
+        }
+
+        .error-message {
+            background: var(--light-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .error-suggestion {
+            background: #f0fff4;
+            padding: 15px 15px 15px 45px;
+            border-radius: 8px;
+            position: relative;
+            border: 2px solid var(--success-color);
+        }
+
+        .error-suggestion::before {
+            content: '\f0eb';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            color: var(--success-color);
+            font-size: 20px;
+        }
+
+        .next-steps {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .next-steps h4 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .next-steps h4 i {
+            margin-right: 10px;
+        }
+
+        .next-steps ol {
+            margin-left: 20px;
+            line-height: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- ヘッダー -->
+        <div class="app-header">
+            <h1><i class="fas fa-calendar-alt"></i> シフト自動作成アプリ</h1>
+            <p>AIが最適なシフトを自動生成</p>
+        </div>
+
+        <!-- プログレスバー -->
+        <div class="progress-container">
+            <div class="progress-steps">
+                <div class="progress-line" id="progressLine" style="width: 0%;"></div>
+                <div class="progress-step">
+                    <div class="step-circle active" id="step1Circle">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="step-label active" id="step1Label">基本情報</div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle" id="step2Circle">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="step-label" id="step2Label">スタッフ情報</div>
+                </div>
+                <div class="progress-step">
+                    <div class="step-circle" id="step3Circle">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="step-label" id="step3Label">シフト作成</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ステップ1: 基本情報 -->
+        <div class="card" id="step1">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="card-title">基本情報の入力</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> 対象年</label>
+                    <input type="number" id="year" value="2026" min="2020" max="2030">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar-day"></i> 対象月</label>
+                    <input type="number" id="month" value="2" min="1" max="12">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-users"></i> スタッフ人数</label>
+                    <input type="number" id="num_staff" value="9" min="1" max="30">
+                </div>
+            </div>
+
+            <div class="card-header" style="margin-top: 30px;">
+                <div class="card-icon">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <div class="card-title">シフト人数設定</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label><i class="fas fa-sun"></i> 早番の必要人数</label>
+                    <input type="number" id="early_count" value="2" min="1" max="10">
+                    <div class="help-text"><i class="fas fa-info-circle"></i> 6:25～15:25</div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-cloud-sun"></i> 中番の必要人数</label>
+                    <input type="number" id="middle_count" value="1" min="1" max="10">
+                    <div class="help-text"><i class="fas fa-info-circle"></i> 8:00～17:00</div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-moon"></i> 遅番の最小人数</label>
+                    <input type="number" id="late_count_min" value="2" min="1" max="10">
+                    <div class="help-text"><i class="fas fa-info-circle"></i> 14:00～23:00</div>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-moon"></i> 遅番の最大人数</label>
+                    <input type="number" id="late_count_max" value="3" min="1" max="10">
+                    <div class="help-text"><i class="fas fa-info-circle"></i> 必要に応じて増員</div>
+                </div>
+            </div>
+
+            <div class="card-header" style="margin-top: 30px;">
+                <div class="card-icon">
+                    <i class="fas fa-balance-scale"></i>
+                </div>
+                <div class="card-title">早番・遅番バランス設定</div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label><i class="fas fa-balance-scale"></i> バランス許容差（±日）</label>
+                    <input type="number" id="balance_tolerance" value="2" min="0" max="10">
+                    <div class="help-text"><i class="fas fa-info-circle"></i> 早番と遅番の回数差を何日以内にするか（例: 2日 → ±2日以内）</div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="goToStep2()">
+                    <i class="fas fa-arrow-right"></i> 次へ：スタッフ情報入力
+                </button>
+            </div>
+        </div>
+
+        <!-- ステップ2: スタッフ情報 -->
+        <div class="card hidden" id="step2">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="card-title">スタッフ情報の入力</div>
+            </div>
+
+            <div id="staff-inputs"></div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep1()">
+                    <i class="fas fa-arrow-left"></i> 戻る
+                </button>
+                <button class="btn btn-primary" onclick="goToStep3()">
+                    <i class="fas fa-arrow-right"></i> 次へ：シフト作成
+                </button>
+            </div>
+        </div>
+
+        <!-- ステップ3: シフト作成 -->
+        <div class="card hidden" id="step3">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="card-title">シフト作成条件の確認</div>
+            </div>
+
+            <div class="conditions-card">
+                <h3 style="color: var(--primary-color); margin-bottom: 20px; font-size: 20px;">
+                    <i class="fas fa-list-check"></i> 設定された条件
+                </h3>
+                <div class="conditions-grid">
+                    <div class="condition-item">
+                        <h4><i class="fas fa-clock"></i> シフト区分</h4>
+                        <ul>
+                            <li><i class="fas fa-check"></i> 早番: 6:25～15:25</li>
+                            <li><i class="fas fa-check"></i> 中番: 8:00～17:00</li>
+                            <li><i class="fas fa-check"></i> 遅番: 14:00～23:00</li>
+                        </ul>
+                    </div>
+                    <div class="condition-item">
+                        <h4><i class="fas fa-user-check"></i> 勤務制約</h4>
+                        <ul>
+                            <li><i class="fas fa-check"></i> 連続勤務3日まで</li>
+                            <li><i class="fas fa-check"></i> 遅番→早番は禁止</li>
+                            <li><i class="fas fa-check"></i> 勤務間隔10時間以上</li>
+                            <li><i class="fas fa-check"></i> 新人同士は同一シフト勤務不可</li>
+                            <li><i class="fas fa-check"></i> 早番・遅番バランス: <span id="balance_display">±2日以内</span></li>
+                        </ul>
+                    </div>
+                    <div class="condition-item">
+                        <h4><i class="fas fa-calendar-minus"></i> 休日</h4>
+                        <ul>
+                            <li><i class="fas fa-check"></i> 偶数月: 8日</li>
+                            <li><i class="fas fa-check"></i> 奇数月: 9日</li>
+                        </ul>
+                    </div>
+                    <div class="condition-item">
+                        <h4><i class="fas fa-heart"></i> 希望</h4>
+                        <ul>
+                            <li><i class="fas fa-check"></i> 希望休+希望シフト: 合計2日まで</li>
+                            <li><i class="fas fa-check"></i> 有給: 別途入力可</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="goToStep2()">
+                    <i class="fas fa-arrow-left"></i> 戻る
+                </button>
+                <button class="btn btn-primary" onclick="generateSchedule()">
+                    <i class="fas fa-magic"></i> シフトを自動作成
+                </button>
+            </div>
+        </div>
+
+        <!-- ローディング -->
+        <div class="card hidden" id="loading">
+            <div class="loading active">
+                <div class="spinner"></div>
+                <div class="loading-text">
+                    <i class="fas fa-cog fa-spin"></i> シフトを作成中...
+                </div>
+            </div>
+        </div>
+
+        <!-- 結果表示 -->
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+
+        function updateProgress() {
+            // 進捗バーの更新
+            const progressLine = document.getElementById('progressLine');
+            progressLine.style.width = ((currentStep - 1) / 2) * 100 + '%';
+
+            // ステップサークルの更新
+            for (let i = 1; i <= 3; i++) {
+                const circle = document.getElementById(`step${i}Circle`);
+                const label = document.getElementById(`step${i}Label`);
+                
+                if (i < currentStep) {
+                    circle.classList.add('completed');
+                    circle.classList.remove('active');
+                    circle.innerHTML = '<i class="fas fa-check"></i>';
+                } else if (i === currentStep) {
+                    circle.classList.add('active');
+                    circle.classList.remove('completed');
+                    if (i === 1) circle.innerHTML = '<i class="fas fa-info-circle"></i>';
+                    if (i === 2) circle.innerHTML = '<i class="fas fa-users"></i>';
+                    if (i === 3) circle.innerHTML = '<i class="fas fa-calendar-check"></i>';
+                } else {
+                    circle.classList.remove('active', 'completed');
+                    if (i === 1) circle.innerHTML = '<i class="fas fa-info-circle"></i>';
+                    if (i === 2) circle.innerHTML = '<i class="fas fa-users"></i>';
+                    if (i === 3) circle.innerHTML = '<i class="fas fa-calendar-check"></i>';
+                }
+
+                if (i === currentStep) {
+                    label.classList.add('active');
+                } else {
+                    label.classList.remove('active');
+                }
+            }
+        }
+
+        function goToStep1() {
+            document.getElementById('step1').classList.remove('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            currentStep = 1;
+            updateProgress();
+            
+            // 保存されたデータを復元
+            loadFormData();
+        }
+
+        function goToStep2() {
+            const numStaff = document.getElementById('num_staff').value;
+            if (!numStaff || numStaff < 1) {
+                alert('スタッフ人数を入力してください');
+                return;
+            }
+            
+            generateStaffInputs();
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.remove('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            currentStep = 2;
+            updateProgress();
+        }
+
+        function goToStep3() {
+            // バランス許容差を表示に反映
+            const balanceTolerance = document.getElementById('balance_tolerance').value;
+            document.getElementById('balance_display').textContent = `±${balanceTolerance}日以内`;
+            
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+            currentStep = 3;
+            updateProgress();
+        }
+
+        function generateStaffInputs() {
+            const numStaff = document.getElementById('num_staff').value;
+            const container = document.getElementById('staff-inputs');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < numStaff; i++) {
+                const staffDiv = document.createElement('div');
+                staffDiv.className = 'staff-item';
+                staffDiv.innerHTML = `
+                    <h3><i class="fas fa-user"></i> スタッフ ${i + 1}</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label><i class="fas fa-id-card"></i> 名前</label>
+                            <input type="text" id="staff_name_${i}" placeholder="例: 山田太郎">
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-times"></i> 希望休</label>
+                            <input type="text" id="requests_off_${i}" placeholder="例: 5,12">
+                            <div class="help-text"><i class="fas fa-info-circle"></i> 希望休と希望シフトは合計2日まで</div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-calendar-plus"></i> 希望シフト</label>
+                            <input type="text" id="preferred_shifts_${i}" placeholder="例: 10:早番,25:遅番">
+                            <div class="help-text"><i class="fas fa-info-circle"></i> 日:シフト、カンマ区切り</div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-plane"></i> 有給</label>
+                            <input type="text" id="holidays_${i}" placeholder="例: 15,28">
+                            <div class="help-text"><i class="fas fa-info-circle"></i> カンマ区切り</div>
+                        </div>
+                    </div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="is_newbie_${i}">
+                            <span><i class="fas fa-graduation-cap"></i> 新人</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="nakaban_only_${i}">
+                            <span><i class="fas fa-user-clock"></i> 中番専任</span>
+                        </label>
+                    </div>
+                `;
+                container.appendChild(staffDiv);
+            }
+            
+            // スタッフ入力欄生成後、保存されたデータを復元
+            setTimeout(() => loadFormData(), 100);
+        }
+
+        function generateSchedule() {
+            // データを保存（エラー時に復元できるように）
+            saveFormData();
+            
+            // ローディング表示
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('result').innerHTML = '';
+
+            const data = {
+                year: parseInt(document.getElementById('year').value),
+                month: parseInt(document.getElementById('month').value),
+                num_staff: parseInt(document.getElementById('num_staff').value),
+                early_count: parseInt(document.getElementById('early_count').value),
+                middle_count: parseInt(document.getElementById('middle_count').value),
+                late_count_min: parseInt(document.getElementById('late_count_min').value),
+                late_count_max: parseInt(document.getElementById('late_count_max').value),
+                balance_tolerance: parseInt(document.getElementById('balance_tolerance').value),
+                staff_list: []
+            };
+
+            for (let i = 0; i < data.num_staff; i++) {
+                const staff = {
+                    name: document.getElementById(`staff_name_${i}`).value || `スタッフ${i + 1}`,
+                    is_newbie: document.getElementById(`is_newbie_${i}`).checked,
+                    nakaban_only: document.getElementById(`nakaban_only_${i}`).checked,
+                    requests_off: document.getElementById(`requests_off_${i}`).value,
+                    preferred_shifts: document.getElementById(`preferred_shifts_${i}`).value,
+                    holidays: document.getElementById(`holidays_${i}`).value
+                };
+                data.staff_list.push(staff);
+            }
+
+            fetch('/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById('loading').classList.add('hidden');
+                
+                if (result.success) {
+                    displaySchedule(result.schedule, result.num_days, data.month, data.year, result.relaxation_info);
+                } else {
+                    displayError(result.message, result.reasons);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('result').innerHTML = `
+                    <div class="card">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            エラーが発生しました: ${error}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function displayError(message, reasons) {
+            let html = '<div class="card">';
+            html += '<div class="alert alert-danger">';
+            html += '<i class="fas fa-times-circle"></i>';
+            html += '<div>';
+            html += '<h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 700;">シフト作成に失敗しました</h3>';
+            html += '<p style="margin: 0;">制約条件が厳しすぎるため、解が見つかりませんでした。</p>';
+            html += '</div>';
+            html += '</div>';
+            
+            if (reasons && reasons.length > 0) {
+                html += '<div class="error-details">';
+                html += '<h3 style="font-size: 24px; margin-bottom: 20px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center;">';
+                html += '<i class="fas fa-search" style="margin-right: 12px; color: var(--primary-color);"></i> 問題の詳細と修正方法';
+                html += '</h3>';
+                
+                reasons.forEach((reason, index) => {
+                    let icon = '<i class="fas fa-exclamation-triangle"></i>';
+                    let borderColor = 'var(--warning-color)';
+                    
+                    if (reason.type === 'critical') {
+                        icon = '<i class="fas fa-times-circle"></i>';
+                        borderColor = 'var(--danger-color)';
+                    } else if (reason.type === 'info') {
+                        icon = '<i class="fas fa-info-circle"></i>';
+                        borderColor = 'var(--info-color)';
+                    }
+                    
+                    html += '<div class="error-item" style="border-left-color: ' + borderColor + ';">';
+                    
+                    html += '<h4>';
+                    html += icon + ' ';
+                    html += (reason.title || `問題 ${index + 1}`);
+                    
+                    if (reason.priority === 1) {
+                        html += ' <span style="display: inline-block; background: var(--danger-color); color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin-left: 8px;">高優先</span>';
+                    } else if (reason.priority === 2) {
+                        html += ' <span style="display: inline-block; background: var(--warning-color); color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin-left: 8px;">中優先</span>';
+                    }
+                    
+                    html += '</h4>';
+                    
+                    html += '<div class="error-message">' + reason.message + '</div>';
+                    html += '<div class="error-suggestion">' + reason.suggestion + '</div>';
+                    html += '</div>';
+                });
+                
+                html += '<div class="next-steps">';
+                html += '<h4><i class="fas fa-rocket"></i> 次のステップ</h4>';
+                html += '<ol>';
+                html += '<li>上記の修正方法を確認</li>';
+                html += '<li>高優先の項目から順に修正</li>';
+                html += '<li>再度「シフトを自動作成」ボタンを押す</li>';
+                html += '</ol>';
+                html += '</div>';
+                
+                html += '</div>';
+            }
+            
+            html += '<div class="button-group">';
+            html += '<button class="btn btn-primary" onclick="goToStep1()"><i class="fas fa-redo"></i> 条件を修正する</button>';
+            html += '</div>';
+            
+            html += '</div>';
+            document.getElementById('result').innerHTML = html;
+        }
+
+        function displaySchedule(schedule, numDays, month, year, relaxationInfo) {
+            let html = '<div class="card">';
+            html += '<div class="card-header">';
+            html += '<div class="card-icon"><i class="fas fa-calendar-check"></i></div>';
+            html += '<div class="card-title">作成されたシフト表</div>';
+            html += '</div>';
+            
+            html += '<div class="alert alert-success">';
+            html += '<i class="fas fa-check-circle"></i> シフトの作成に成功しました！';
+            html += '</div>';
+            
+            // 制約緩和が適用された場合、情報を表示
+            if (relaxationInfo && relaxationInfo.applied) {
+                html += '<div class="alert" style="background: linear-gradient(135deg, #fff3cd 0%, #fffaeb 100%); border-left: 4px solid #ffc107; padding: 16px; margin-bottom: 20px;">';
+                html += '<div style="display: flex; align-items: start; gap: 12px;">';
+                html += '<i class="fas fa-info-circle" style="color: #ff9800; font-size: 24px; margin-top: 2px;"></i>';
+                html += '<div style="flex: 1;">';
+                html += '<h4 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 700; color: #f57c00;">制約を緩和してシフトを作成しました</h4>';
+                html += `<p style="margin: 0 0 8px 0; color: #666;">適用した緩和: <strong>${relaxationInfo.description}</strong></p>`;
+                
+                if (relaxationInfo.relax_balance > 0) {
+                    html += `<p style="margin: 0; color: #666;"><i class="fas fa-balance-scale" style="margin-right: 6px;"></i>早番・遅番バランス許容差: ±${relaxationInfo.adjusted_balance_tolerance}日以内（元: ±${relaxationInfo.adjusted_balance_tolerance - relaxationInfo.relax_balance}日）</p>`;
+                }
+                
+                if (relaxationInfo.relax_preferences) {
+                    html += '<p style="margin: 4px 0 0 0; color: #666;"><i class="fas fa-star" style="margin-right: 6px;"></i>希望シフトが一部未達成の可能性があります</p>';
+                }
+                
+                if (relaxationInfo.relax_consecutive) {
+                    html += '<p style="margin: 4px 0 0 0; color: #666;"><i class="fas fa-calendar-day" style="margin-right: 6px;"></i>連続勤務が4日まで許可されています（通常は3日まで）</p>';
+                }
+                
+                if (relaxationInfo.relax_late_early) {
+                    html += '<p style="margin: 4px 0 0 0; color: #666;"><i class="fas fa-clock" style="margin-right: 6px;"></i>遅番の翌日に早番が入る可能性があります</p>';
+                }
+                
+                html += '</div></div></div>';
+            }
+            
+            html += '<div class="schedule-table"><table>';
+            html += '<thead><tr><th style="position: sticky; left: 0; z-index: 11;">スタッフ名</th>';
+            
+            const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
+            for (let day = 1; day <= numDays; day++) {
+                const date = new Date(year, month - 1, day);
+                const dayOfWeek = daysOfWeek[date.getDay()];
+                html += `<th>${month}/${day}<br>${dayOfWeek}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            schedule.forEach(staff => {
+                html += `<tr><td><strong>${staff.name}</strong></td>`;
+                staff.shifts.forEach(shift => {
+                    let displayText = shift;
+                    if (shift === '早番') {
+                        displayText = '早番<br><small style="font-size:0.85em; color:#999;">6:25～15:25</small>';
+                    } else if (shift === '中番') {
+                        displayText = '中番<br><small style="font-size:0.85em; color:#999;">8:00～17:00</small>';
+                    } else if (shift === '遅番') {
+                        displayText = '遅番<br><small style="font-size:0.85em; color:#999;">14:00～23:00</small>';
+                    }
+                    html += `<td><span class="shift-${shift}">${displayText}</span></td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table></div>';
+            html += '<div class="button-group" style="margin-top: 30px;">';
+            html += '<button class="btn btn-success" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Excelファイルとしてダウンロード</button>';
+            html += '<button class="btn btn-secondary" onclick="clearSavedData(); goToStep1();"><i class="fas fa-redo"></i> 新しいシフトを作成</button>';
+            html += '</div></div>';
+            
+            document.getElementById('result').innerHTML = html;
+            
+            window.currentSchedule = {
+                schedule: schedule,
+                num_days: numDays,
+                month: month,
+                year: year
+            };
+        }
+
+        function exportToExcel() {
+            if (!window.currentSchedule) {
+                alert('エクスポートするシフトがありません');
+                return;
+            }
+
+            const data = {
+                schedule: window.currentSchedule.schedule,
+                num_days: window.currentSchedule.num_days,
+                month: window.currentSchedule.month,
+                year: window.currentSchedule.year
+            };
+
+            fetch('/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `shift_${data.year}_${data.month}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                alert('エクスポート中にエラーが発生しました: ' + error);
+            });
+        }
+
+        // データ保存関数
+        function saveFormData() {
+            const data = {
+                year: document.getElementById('year').value,
+                month: document.getElementById('month').value,
+                num_staff: document.getElementById('num_staff').value,
+                early_count: document.getElementById('early_count').value,
+                middle_count: document.getElementById('middle_count').value,
+                late_count_min: document.getElementById('late_count_min').value,
+                late_count_max: document.getElementById('late_count_max').value,
+                balance_tolerance: document.getElementById('balance_tolerance').value,
+                staff_list: []
+            };
+            
+            const numStaff = parseInt(document.getElementById('num_staff').value);
+            for (let i = 0; i < numStaff; i++) {
+                const staffElem = document.getElementById(`staff_name_${i}`);
+                if (staffElem) {
+                    data.staff_list.push({
+                        name: document.getElementById(`staff_name_${i}`).value,
+                        is_newbie: document.getElementById(`is_newbie_${i}`)?.checked || false,
+                        nakaban_only: document.getElementById(`nakaban_only_${i}`)?.checked || false,
+                        requests_off: document.getElementById(`requests_off_${i}`)?.value || '',
+                        preferred_shifts: document.getElementById(`preferred_shifts_${i}`)?.value || '',
+                        holidays: document.getElementById(`holidays_${i}`)?.value || ''
+                    });
+                }
+            }
+            
+            localStorage.setItem('shiftSchedulerData', JSON.stringify(data));
+        }
+        
+        // データ復元関数
+        function loadFormData() {
+            const savedData = localStorage.getItem('shiftSchedulerData');
+            if (!savedData) return false;
+            
+            try {
+                const data = JSON.parse(savedData);
+                
+                // Step 1のデータを復元
+                if (data.year) document.getElementById('year').value = data.year;
+                if (data.month) document.getElementById('month').value = data.month;
+                if (data.num_staff) document.getElementById('num_staff').value = data.num_staff;
+                if (data.early_count) document.getElementById('early_count').value = data.early_count;
+                if (data.middle_count) document.getElementById('middle_count').value = data.middle_count;
+                if (data.late_count_min) document.getElementById('late_count_min').value = data.late_count_min;
+                if (data.late_count_max) document.getElementById('late_count_max').value = data.late_count_max;
+                if (data.balance_tolerance) document.getElementById('balance_tolerance').value = data.balance_tolerance;
+                
+                // Step 2のデータを復元（スタッフ入力欄が生成されている場合）
+                if (data.staff_list && data.staff_list.length > 0) {
+                    data.staff_list.forEach((staff, i) => {
+                        const staffNameElem = document.getElementById(`staff_name_${i}`);
+                        if (staffNameElem) {
+                            staffNameElem.value = staff.name || '';
+                            if (document.getElementById(`is_newbie_${i}`)) {
+                                document.getElementById(`is_newbie_${i}`).checked = staff.is_newbie || false;
+                            }
+                            if (document.getElementById(`nakaban_only_${i}`)) {
+                                document.getElementById(`nakaban_only_${i}`).checked = staff.nakaban_only || false;
+                            }
+                            if (document.getElementById(`requests_off_${i}`)) {
+                                document.getElementById(`requests_off_${i}`).value = staff.requests_off || '';
+                            }
+                            if (document.getElementById(`preferred_shifts_${i}`)) {
+                                document.getElementById(`preferred_shifts_${i}`).value = staff.preferred_shifts || '';
+                            }
+                            if (document.getElementById(`holidays_${i}`)) {
+                                document.getElementById(`holidays_${i}`).value = staff.holidays || '';
+                            }
+                        }
+                    });
+                }
+                
+                return true;
+            } catch (e) {
+                console.error('データ復元エラー:', e);
+                return false;
+            }
+        }
+        
+        // データクリア関数
+        function clearSavedData() {
+            localStorage.removeItem('shiftSchedulerData');
+        }
+
+        // 初期化
+        updateProgress();
+        
+        // ページロード時に保存されたデータを復元
+        window.addEventListener('load', function() {
+            loadFormData();
+        });
+    </script>
+</body>
+</html>
